@@ -1,15 +1,11 @@
 from datetime import datetime
-from typing import Any
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, ConfigDict, Field
-from sqlalchemy.orm import Session
 
 from app.application.jobs import CreateJobInput, CreateJobUseCase, GetJobUseCase
-from app.celery_app import celery
 from app.domain.jobs.model import Job
-from app.infrastructure.database import get_session
-from app.infrastructure.jobs import SqlAlchemyJobRepository
 
 router = APIRouter(prefix="/api/jobs", tags=["jobs"])
 
@@ -46,21 +42,25 @@ class JobResponse(BaseModel):
         )
 
 
+def get_create_job_use_case() -> CreateJobUseCase:
+    raise RuntimeError("CreateJobUseCase dependency is not configured")
+
+
+def get_get_job_use_case() -> GetJobUseCase:
+    raise RuntimeError("GetJobUseCase dependency is not configured")
+
+
 @router.post("", response_model=JobResponse, status_code=status.HTTP_202_ACCEPTED)
 def create_job(
-    request: CreateJobRequest, session: Session = Depends(get_session)
+    request: CreateJobRequest,
+    use_case: Annotated[CreateJobUseCase, Depends(get_create_job_use_case)],
 ) -> JobResponse:
-    repository = SqlAlchemyJobRepository(session)
-    use_case = CreateJobUseCase(repository, celery)
     job = use_case.execute(
         CreateJobInput(request.duration_seconds, request.should_fail)
     )
-    session.commit()
     try:
         job = use_case.dispatch(job)
-        session.commit()
     except Exception as error:
-        session.rollback()
         raise HTTPException(
             status_code=503, detail="Job broker is unavailable"
         ) from error
@@ -68,8 +68,11 @@ def create_job(
 
 
 @router.get("/{job_id}", response_model=JobResponse)
-def get_job(job_id: str, session: Session = Depends(get_session)) -> JobResponse:
-    job = GetJobUseCase(SqlAlchemyJobRepository(session)).execute(job_id)
+def get_job(
+    job_id: str,
+    use_case: Annotated[GetJobUseCase, Depends(get_get_job_use_case)],
+) -> JobResponse:
+    job = use_case.execute(job_id)
     if job is None:
         raise HTTPException(status_code=404, detail="Job not found")
     return JobResponse.from_job(job)
