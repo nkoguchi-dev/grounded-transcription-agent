@@ -1,0 +1,44 @@
+[tool.poetry]
+name = "grounded-transcription-agent-backend"
+version = "0.1.0"
+description = "Asynchronous job foundation for grounded transcription"
+authors = ["Noriyuki Koguchi"]
+packages = [{include = "app"}]
+
+[tool.poetry.dependencies]
+python = "^3.14"
+fastapi = "^0.135.0"
+uvicorn = {extras = ["standard"], version = "^0.41.0"}
+celery = {extras = ["redis"], version = "^5.6.0"}
+sqlalchemy = "^2.0.0"
+psycopg = {extras = ["binary"], version = "^3.2.0"}
+alembic = "^1.16.0"
+pydantic = "^2.0.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^9.0.0"
+httpx = "^0.28.0"
+black = "^26.0.0"
+isort = "^8.0.0"
+flake8 = "^7.0.0"
+mypy = "^1.15.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+line-length = 88
+target-version = ['py314']
+[tool.isort]
+profile = "black"
+[tool.pytest.ini_options]
+testpaths = ["tests", "integration_tests"]
+pythonpath = ["."]
+[tool.mypy]
+python_version = "3.14"
+strict = true
+
+[[tool.mypy.overrides]]
+module = ["celery"]
+ignore_missing_imports = true

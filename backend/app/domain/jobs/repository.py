@@ -1,0 +1,9 @@
+from typing import Protocol
+
+from app.domain.jobs.model import Job
+
+
+class JobRepository(Protocol):
+    def create(self, job: Job) -> None: ...
+    def get(self, job_id: str) -> Job | None: ...
+    def update(self, job: Job) -> None: ...

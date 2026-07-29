@@ -1,0 +1,14 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.mypy_cache/
+
+# Local development data and environment
+.env.local
+database/data/
+minio/volume/
+
+# OS
+.DS_Store
