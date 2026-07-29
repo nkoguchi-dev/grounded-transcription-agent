@@ -21,6 +21,9 @@ authentication, or transcription-provider integration until their phase is start
   Application and Infrastructure.
 - Do not execute external-service calls or long-running work inside a database transaction. Persist
   asynchronous state transitions in short, independent transactions.
+- Before opening a pull request, confirm that its base is the intended remote default branch and
+  that the comparison contains only changes for the target Issue; split unrelated changes and
+  unpublished local commits into separate pull requests.
 - Run `poetry run black .`, `poetry run isort .`, `poetry run flake8 .`,
   `poetry run mypy .`, and `poetry run pytest` before committing.
 
