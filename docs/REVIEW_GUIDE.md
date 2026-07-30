@@ -16,6 +16,11 @@
   層に限定され、Application／Domain に実装固有の名称がない。
 - [ ] ドメインモデルを入出力とする Repository Interface は、対応する `app/domain/<domain>/` 配下に定義され、Application 層に残っていない。
 - [ ] Application と Infrastructure の両方を import するのは composition root に限定されている。
+- [ ] 1 つの Python モジュールが 1 つの機能だけを所有し、ユースケース、API 操作、Worker 処理が
+  別モジュールに分割されている。
+- [ ] 各機能に固有の入力・出力 DTO は、その機能を実装するモジュールに定義されている。
+- [ ] `__init__.py`、composition root、ルーター集約などの組み立て専用モジュールに、機能の実装や
+  DTO が混入していない。
 
 ## トランザクション
 

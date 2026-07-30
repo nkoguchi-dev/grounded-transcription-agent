@@ -1,10 +1,8 @@
 import time
 
-from app.application.jobs import (
-    CreateJobUseCase,
-    ExecuteDummyJobUseCase,
-    GetJobUseCase,
-)
+from app.application.jobs.create_job_use_case import CreateJobUseCase
+from app.application.jobs.execute_dummy_job_use_case import ExecuteDummyJobUseCase
+from app.application.jobs.get_job_use_case import GetJobUseCase
 from app.infrastructure.database import SqlAlchemyJobUnitOfWork
 from app.presentation.celery_app import celery
 from app.presentation.celery_publisher import CeleryJobPublisher
