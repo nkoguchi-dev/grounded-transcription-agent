@@ -19,7 +19,7 @@ class JobRecord(Base):
     should_fail: Mapped[bool] = mapped_column(Boolean)
     result: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
-    celery_task_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    task_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     started_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
@@ -36,7 +36,7 @@ class JobRecord(Base):
             self.should_fail,
             self.result,
             self.error_message,
-            self.celery_task_id,
+            self.task_id,
             self.created_at,
             self.started_at,
             self.finished_at,
@@ -62,3 +62,9 @@ class SqlAlchemyJobRepository:
             setattr(
                 record, field, value.value if isinstance(value, JobStatus) else value
             )
+
+    def set_task_id(self, job_id: str, task_id: str) -> None:
+        record = self._session.get(JobRecord, job_id)
+        if record is None:
+            raise LookupError(job_id)
+        record.task_id = task_id

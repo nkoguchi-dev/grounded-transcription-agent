@@ -5,12 +5,13 @@ from app.application.jobs import (
     ExecuteDummyJobUseCase,
     GetJobUseCase,
 )
-from app.celery_app import celery
 from app.infrastructure.database import SqlAlchemyJobUnitOfWork
+from app.presentation.celery_app import celery
+from app.presentation.celery_publisher import CeleryJobPublisher
 
 
 def build_create_job_use_case() -> CreateJobUseCase:
-    return CreateJobUseCase(SqlAlchemyJobUnitOfWork, celery)
+    return CreateJobUseCase(SqlAlchemyJobUnitOfWork, CeleryJobPublisher(celery))
 
 
 def build_get_job_use_case() -> GetJobUseCase:

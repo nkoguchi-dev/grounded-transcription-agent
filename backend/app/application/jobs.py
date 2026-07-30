@@ -1,8 +1,7 @@
 from collections.abc import Callable
 from dataclasses import dataclass
 
-from celery import Celery
-
+from app.application.job_publisher import JobPublisher
 from app.application.unit_of_work import JobUnitOfWorkFactory
 from app.domain.jobs.model import Job, JobStatus
 
@@ -14,9 +13,11 @@ class CreateJobInput:
 
 
 class CreateJobUseCase:
-    def __init__(self, uow_factory: JobUnitOfWorkFactory, celery: Celery) -> None:
+    def __init__(
+        self, uow_factory: JobUnitOfWorkFactory, job_publisher: JobPublisher
+    ) -> None:
         self._uow_factory = uow_factory
-        self._celery = celery
+        self._job_publisher = job_publisher
 
     def execute(self, input_data: CreateJobInput) -> Job:
         job = Job.create(input_data.duration_seconds, input_data.should_fail)
@@ -26,15 +27,11 @@ class CreateJobUseCase:
         return job
 
     def dispatch(self, job: Job) -> Job:
-        task = self._celery.send_task("app.worker.execute_dummy_job", args=[job.id])
+        task_id = self._job_publisher.publish(job.id)
         with self._uow_factory() as uow:
-            persisted_job = uow.jobs.get(job.id)
-            if persisted_job is None:
-                raise LookupError(job.id)
-            updated = persisted_job.with_task_id(task.id)
-            uow.jobs.update(updated)
+            uow.jobs.set_task_id(job.id, task_id)
             uow.commit()
-        return updated
+        return job.with_task_id(task_id)
 
 
 class GetJobUseCase:
