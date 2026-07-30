@@ -4,7 +4,7 @@ from collections.abc import Callable
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
-from app.application.ports import JobRepository
+from app.domain.jobs.job_repository import JobRepository
 from app.infrastructure.jobs import SqlAlchemyJobRepository
 
 engine = create_engine(os.environ["DATABASE_URL"], pool_pre_ping=True)
