@@ -3,7 +3,7 @@ from dataclasses import dataclass
 
 from celery import Celery
 
-from app.application.ports import JobUnitOfWorkFactory
+from app.application.unit_of_work import JobUnitOfWorkFactory
 from app.domain.jobs.model import Job, JobStatus
 
 

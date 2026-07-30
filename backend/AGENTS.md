@@ -1,0 +1,34 @@
+# バックエンド開発ガイド
+
+## アーキテクチャと依存関係
+
+- Python 3.14、FastAPI、Celery、PostgreSQL、Redis、MinIO をローカルスタックとして使用する。
+- 依存方向は `Presentation → Application → Domain` とする。Infrastructure は Application と
+  Domain の抽象を実装し、Application と Infrastructure の両方を import できるのは composition
+  root のみとする。
+- `JobRepository` のようにドメインモデルを入出力とする Repository Interface は、対応するモデルの
+  近くの `app/domain/<domain>/` に定義する。Application 層には配置しない。
+- ジョブの状態・結果の正本は PostgreSQL とする。Redis は Celery のブローカーとしてのみ使用する。
+- Application のユースケースがトランザクション境界を決め、Unit of Work などの抽象のみに依存する。
+  SQLAlchemy の型、Session、具象 Repository を import してはならない。
+- Infrastructure は SQLAlchemy による Unit of Work と Repository の実装を提供し、commit/rollback と
+  Session のライフサイクルを管理する。
+- Presentation は DB、SQLAlchemy、具象 Repository、DB 接続設定を参照せず、Application の
+  ユースケースを呼び出す。Application と Infrastructure を組み立てるのは composition root のみとする。
+- 外部サービスの呼び出しや長時間処理を DB トランザクション内で実行しない。非同期処理の状態遷移は、
+  短い独立したトランザクションとして永続化する。
+
+## 検証
+
+コミット前に `poetry run black .`、`poetry run isort .`、`poetry run flake8 .`、
+`poetry run mypy .`、`poetry run pytest` を実行する。
+
+## ローカルコマンド（リポジトリルートで実行）
+
+```bash
+cp backend/.env.example backend/.env.local
+cp minio/.env.example minio/.env.local
+docker compose up --build --wait
+docker compose logs -f api worker
+cd backend && poetry run pytest
+```
