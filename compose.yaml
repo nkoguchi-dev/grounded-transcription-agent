@@ -3,10 +3,7 @@ name: grounded-transcription-agent
 services:
   postgres:
     image: postgres:17
-    environment:
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    env_file: ./backend/.env.local
     ports: ["127.0.0.1:5433:5432"]
     volumes: ["./database/data:/var/lib/postgresql/data"]
     healthcheck:
@@ -27,9 +24,8 @@ services:
 
   minio:
     image: minio/minio:RELEASE.2025-09-07T16-13-09Z
+    env_file: ./minio/.env.local
     environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
       MINIO_REGION: ap-northeast-1
     command: server /data --console-address ":9001"
     ports: ["127.0.0.1:9002:9000", "127.0.0.1:9003:9001"]
@@ -44,17 +40,14 @@ services:
     image: minio/mc:RELEASE.2025-08-13T08-35-41Z
     depends_on:
       minio: { condition: service_healthy }
-    environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    env_file: ./minio/.env.local
     volumes: ["./minio/init.sh:/usr/local/bin/init.sh:ro"]
     entrypoint: ["/bin/sh", "/usr/local/bin/init.sh"]
 
   migrate:
     build: ./backend
     command: ["alembic", "upgrade", "head"]
-    environment:
-      DATABASE_URL: ${DATABASE_URL}
+    env_file: ./backend/.env.local
     depends_on:
       postgres: { condition: service_healthy }
 
@@ -63,9 +56,7 @@ services:
     command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
     ports: ["127.0.0.1:8010:8000"]
     volumes: ["./backend:/app"]
-    environment:
-      DATABASE_URL: ${DATABASE_URL}
-      CELERY_BROKER_URL: ${CELERY_BROKER_URL}
+    env_file: ./backend/.env.local
     depends_on:
       migrate: { condition: service_completed_successfully }
       redis: { condition: service_healthy }
@@ -75,9 +66,7 @@ services:
     build: ./backend
     command: ["celery", "-A", "app.celery_app.celery", "worker", "--loglevel=INFO"]
     volumes: ["./backend:/app"]
-    environment:
-      DATABASE_URL: ${DATABASE_URL}
-      CELERY_BROKER_URL: ${CELERY_BROKER_URL}
+    env_file: ./backend/.env.local
     depends_on:
       migrate: { condition: service_completed_successfully }
       redis: { condition: service_healthy }
