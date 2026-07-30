@@ -6,7 +6,8 @@
 ## 起動
 
 ```bash
-cp .env.example .env.local
+cp backend/.env.example backend/.env.local
+cp minio/.env.example minio/.env.local
 docker compose up --build --wait
 curl -X POST http://localhost:8010/api/jobs -H 'content-type: application/json' \
   -d '{"duration_seconds": 1, "should_fail": false}'

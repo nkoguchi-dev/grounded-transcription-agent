@@ -28,7 +28,8 @@ Phase 1 では、ローカルで動く非同期ジョブ基盤を構築する。
 ## ローカルコマンド
 
 ```bash
-cp .env.example .env.local
+cp backend/.env.example backend/.env.local
+cp minio/.env.example minio/.env.local
 docker compose up --build --wait
 docker compose logs -f api worker
 cd backend && poetry run pytest
