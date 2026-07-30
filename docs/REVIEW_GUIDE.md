@@ -12,6 +12,8 @@
 - [ ] Presentation は SQLAlchemy、Session、具体 Repository、DB 接続設定を直接参照していない。
 - [ ] Application は SQLAlchemy の型、Session、具体 Repository に依存せず、ユースケースとトランザクション境界を表現している。
 - [ ] Domain は永続化、フレームワーク、外部サービスの知識を持たない。
+- [ ] FastAPI／Celery の import、型、設定、タスク登録・発行・Worker エントリポイントは Presentation
+  層に限定され、Application／Domain に実装固有の名称がない。
 - [ ] ドメインモデルを入出力とする Repository Interface は、対応する `app/domain/<domain>/` 配下に定義され、Application 層に残っていない。
 - [ ] Application と Infrastructure の両方を import するのは composition root に限定されている。
 

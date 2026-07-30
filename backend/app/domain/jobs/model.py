@@ -20,7 +20,7 @@ class Job:
     should_fail: bool
     result: dict[str, Any] | None
     error_message: str | None
-    celery_task_id: str | None
+    task_id: str | None
     created_at: datetime
     started_at: datetime | None
     finished_at: datetime | None
@@ -36,14 +36,14 @@ class Job:
             should_fail=should_fail,
             result=None,
             error_message=None,
-            celery_task_id=None,
+            task_id=None,
             created_at=datetime.now(timezone.utc),
             started_at=None,
             finished_at=None,
         )
 
     def with_task_id(self, task_id: str) -> "Job":
-        return replace(self, celery_task_id=task_id)
+        return replace(self, task_id=task_id)
 
     def start(self) -> "Job":
         if self.status is not JobStatus.QUEUED:

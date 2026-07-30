@@ -1,8 +1,4 @@
-from dataclasses import dataclass
-from typing import cast
-
 import pytest
-from celery import Celery
 
 from app.application.jobs import (
     CreateJobInput,
@@ -27,6 +23,12 @@ class InMemoryJobRepository:
         if job.id not in self._jobs:
             raise LookupError(job.id)
         self._jobs[job.id] = job
+
+    def set_task_id(self, job_id: str, task_id: str) -> None:
+        job = self.get(job_id)
+        if job is None:
+            raise LookupError(job_id)
+        self._jobs[job_id] = job.with_task_id(task_id)
 
 
 class InMemoryUnitOfWork:
@@ -60,30 +62,56 @@ class InMemoryUnitOfWorkFactory:
         return unit
 
 
-@dataclass
-class FakeTask:
-    id: str
+class FakeJobPublisher:
+    def __init__(self) -> None:
+        self.published_job_ids: list[str] = []
+
+    def publish(self, job_id: str) -> str:
+        self.published_job_ids.append(job_id)
+        return "task-123"
 
 
-class FakeCelery:
-    def send_task(self, *_: object, **__: object) -> FakeTask:
-        return FakeTask(id="task-123")
+class CompletingJobPublisher(FakeJobPublisher):
+    def __init__(self, jobs: dict[str, Job]) -> None:
+        super().__init__()
+        self._jobs = jobs
+
+    def publish(self, job_id: str) -> str:
+        task_id = super().publish(job_id)
+        self._jobs[job_id] = self._jobs[job_id].start().succeed({"message": "done"})
+        return task_id
 
 
 def test_create_and_dispatch_job_use_independent_committed_transactions() -> None:
     uow_factory = InMemoryUnitOfWorkFactory()
-    use_case = CreateJobUseCase(uow_factory, cast(Celery, FakeCelery()))
+    job_publisher = FakeJobPublisher()
+    use_case = CreateJobUseCase(uow_factory, job_publisher)
 
     created = use_case.execute(CreateJobInput(duration_seconds=0, should_fail=False))
     dispatched = use_case.dispatch(created)
 
-    assert dispatched.celery_task_id == "task-123"
+    assert dispatched.task_id == "task-123"
+    assert job_publisher.published_job_ids == [created.id]
     assert [unit.commit_calls for unit in uow_factory.created_units] == [1, 1]
+
+
+def test_dispatch_keeps_a_worker_state_transition_when_storing_task_id() -> None:
+    uow_factory = InMemoryUnitOfWorkFactory()
+    job_publisher = CompletingJobPublisher(uow_factory.jobs)
+    use_case = CreateJobUseCase(uow_factory, job_publisher)
+    created = use_case.execute(CreateJobInput(duration_seconds=0, should_fail=False))
+
+    dispatched = use_case.dispatch(created)
+
+    persisted = uow_factory.jobs[created.id]
+    assert dispatched.task_id == "task-123"
+    assert persisted.task_id == "task-123"
+    assert persisted.status.value == "succeeded"
 
 
 def test_dummy_worker_marks_failed_job_in_a_separate_transaction() -> None:
     uow_factory = InMemoryUnitOfWorkFactory()
-    created = CreateJobUseCase(uow_factory, cast(Celery, FakeCelery())).execute(
+    created = CreateJobUseCase(uow_factory, FakeJobPublisher()).execute(
         CreateJobInput(duration_seconds=0, should_fail=True)
     )
     worker_use_case = ExecuteDummyJobUseCase(uow_factory, lambda _: None)

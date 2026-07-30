@@ -15,6 +15,9 @@
   Session のライフサイクルを管理する。
 - Presentation は DB、SQLAlchemy、具象 Repository、DB 接続設定を参照せず、Application の
   ユースケースを呼び出す。Application と Infrastructure を組み立てるのは composition root のみとする。
+- FastAPI と Celery の import、型、設定、タスク登録・発行・Worker エントリポイントは Presentation 層に
+  限定する。Application はフレームワーク非依存のポートを通じてジョブを発行し、Domain は実装方式を
+  示す名称を持たない不透明な task ID だけを扱う。
 - 外部サービスの呼び出しや長時間処理を DB トランザクション内で実行しない。非同期処理の状態遷移は、
   短い独立したトランザクションとして永続化する。
 
