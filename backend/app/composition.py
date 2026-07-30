@@ -9,6 +9,8 @@ from app.presentation.celery_publisher import CeleryJobPublisher
 
 
 def build_create_job_use_case() -> CreateJobUseCase:
+    # Concrete infrastructure is wired only here so application use cases remain
+    # independent from SQLAlchemy and Celery.
     return CreateJobUseCase(SqlAlchemyJobUnitOfWork, CeleryJobPublisher(celery))
 
 

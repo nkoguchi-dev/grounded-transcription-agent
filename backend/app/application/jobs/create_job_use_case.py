@@ -27,6 +27,8 @@ class CreateJobUseCase:
 
     def dispatch(self, job: Job) -> Job:
         task_id = self._job_publisher.publish(job.id)
+        # Publishing and task-ID storage cannot share PostgreSQL's transaction. A
+        # failure can leave a visible queued job with an uncertain delivery outcome.
         with self._uow_factory() as uow:
             uow.jobs.set_task_id(job.id, task_id)
             uow.commit()

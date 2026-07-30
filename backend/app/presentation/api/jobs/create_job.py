@@ -58,6 +58,8 @@ def create_job(
     try:
         job = use_case.dispatch(job)
     except Exception as error:
+        # Creation was already committed, but dispatch and task-ID storage are not
+        # atomic. Return an error so callers know to reconcile the created job.
         raise HTTPException(
             status_code=503, detail="Job broker is unavailable"
         ) from error

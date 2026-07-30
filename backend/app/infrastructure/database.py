@@ -30,6 +30,8 @@ class SqlAlchemyJobUnitOfWork:
 
     def __exit__(self, *_: object) -> None:
         if self._session is not None:
+            # commit is explicit at the use-case boundary. Always rolling back here
+            # discards partial changes when a block exits through an exception.
             self._session.rollback()
             self._session.close()
         self._session = None

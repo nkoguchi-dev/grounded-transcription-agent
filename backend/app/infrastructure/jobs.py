@@ -29,6 +29,8 @@ class JobRecord(Base):
     )
 
     def to_domain(self) -> Job:
+        # Keep ORM records at the infrastructure boundary; inner layers operate only
+        # on the domain model and do not acquire SQLAlchemy-specific behavior.
         return Job(
             self.id,
             JobStatus(self.status),
