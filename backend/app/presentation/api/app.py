@@ -1,11 +1,10 @@
 from fastapi import FastAPI
 
-from app.application.jobs import CreateJobUseCase, GetJobUseCase
-from app.presentation.api.jobs import (
-    get_create_job_use_case,
-    get_get_job_use_case,
-)
+from app.application.jobs.create_job_use_case import CreateJobUseCase
+from app.application.jobs.get_job_use_case import GetJobUseCase
 from app.presentation.api.jobs import router as jobs_router
+from app.presentation.api.jobs.create_job import get_create_job_use_case
+from app.presentation.api.jobs.get_job import get_get_job_use_case
 
 
 def create_api(

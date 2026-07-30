@@ -4,7 +4,7 @@ from typing import Annotated, Any
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.application.jobs import CreateJobInput, CreateJobUseCase, GetJobUseCase
+from app.application.jobs.create_job_use_case import CreateJobInput, CreateJobUseCase
 from app.domain.jobs.model import Job
 
 router = APIRouter(prefix="/api/jobs", tags=["jobs"])
@@ -12,11 +12,12 @@ router = APIRouter(prefix="/api/jobs", tags=["jobs"])
 
 class CreateJobRequest(BaseModel):
     model_config = ConfigDict(strict=True, extra="forbid")
+
     duration_seconds: int = Field(default=1, ge=0, le=60)
     should_fail: bool = False
 
 
-class JobResponse(BaseModel):
+class CreateJobResponse(BaseModel):
     id: str
     status: str
     duration_seconds: int
@@ -28,7 +29,7 @@ class JobResponse(BaseModel):
     finished_at: datetime | None
 
     @classmethod
-    def from_job(cls, job: Job) -> "JobResponse":
+    def from_job(cls, job: Job) -> "CreateJobResponse":
         return cls(
             id=job.id,
             status=job.status.value,
@@ -46,15 +47,11 @@ def get_create_job_use_case() -> CreateJobUseCase:
     raise RuntimeError("CreateJobUseCase dependency is not configured")
 
 
-def get_get_job_use_case() -> GetJobUseCase:
-    raise RuntimeError("GetJobUseCase dependency is not configured")
-
-
-@router.post("", response_model=JobResponse, status_code=status.HTTP_202_ACCEPTED)
+@router.post("", response_model=CreateJobResponse, status_code=status.HTTP_202_ACCEPTED)
 def create_job(
     request: CreateJobRequest,
     use_case: Annotated[CreateJobUseCase, Depends(get_create_job_use_case)],
-) -> JobResponse:
+) -> CreateJobResponse:
     job = use_case.execute(
         CreateJobInput(request.duration_seconds, request.should_fail)
     )
@@ -64,15 +61,4 @@ def create_job(
         raise HTTPException(
             status_code=503, detail="Job broker is unavailable"
         ) from error
-    return JobResponse.from_job(job)
-
-
-@router.get("/{job_id}", response_model=JobResponse)
-def get_job(
-    job_id: str,
-    use_case: Annotated[GetJobUseCase, Depends(get_get_job_use_case)],
-) -> JobResponse:
-    job = use_case.execute(job_id)
-    if job is None:
-        raise HTTPException(status_code=404, detail="Job not found")
-    return JobResponse.from_job(job)
+    return CreateJobResponse.from_job(job)

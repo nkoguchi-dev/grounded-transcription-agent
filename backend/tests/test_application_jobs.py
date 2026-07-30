@@ -1,11 +1,8 @@
 import pytest
 
-from app.application.jobs import (
-    CreateJobInput,
-    CreateJobUseCase,
-    ExecuteDummyJobUseCase,
-    GetJobUseCase,
-)
+from app.application.jobs.create_job_use_case import CreateJobInput, CreateJobUseCase
+from app.application.jobs.execute_dummy_job_use_case import ExecuteDummyJobUseCase
+from app.application.jobs.get_job_use_case import GetJobUseCase
 from app.domain.jobs.model import Job
 
 
