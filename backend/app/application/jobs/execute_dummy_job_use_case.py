@@ -14,6 +14,8 @@ class ExecuteDummyJobUseCase:
     def execute(self, job_id: str) -> None:
         job = self._start(job_id)
         if job is None:
+            # A message can be redelivered after a worker interruption; only the first
+            # delivery may move a queued job into the running state.
             return
         try:
             self._sleep(job.duration_seconds)
@@ -22,6 +24,8 @@ class ExecuteDummyJobUseCase:
             self._succeed(job_id)
         except Exception as error:
             self._fail(job_id, str(error))
+            # Persist failure before re-raising so the job's canonical status remains
+            # observable even when the task runner records or retries the exception.
             raise
 
     def _start(self, job_id: str) -> Job | None:

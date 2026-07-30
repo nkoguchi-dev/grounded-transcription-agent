@@ -46,6 +46,8 @@ class Job:
         return replace(self, task_id=task_id)
 
     def start(self) -> "Job":
+        # Terminal outcomes are immutable; accepting a late start would let a duplicate
+        # task delivery overwrite an already-observed result.
         if self.status is not JobStatus.QUEUED:
             raise ValueError("only queued jobs can start")
         return replace(
