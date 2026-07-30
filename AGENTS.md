@@ -23,6 +23,11 @@ Phase 1 では、ローカルで動く非同期ジョブ基盤を構築する。
 
 - 作業を開始する前にリモートの最新 `main` を取得・確認する。
 - 最新の `origin/main` のコミットを起点に、対象 Issue 専用の作業ブランチを作成して作業する。
+- 新規の Issue 対応ブランチは、`<type>/issue-<issue-number>/<short-description>` と命名する。
+  - `<type>` には変更の性質を表す小文字の区分を使う（例: `feature`, `fix`, `refactor`, `docs`, `chore`）。
+  - `<short-description>` は変更目的を表す小文字ケバブケースとする。
+  - 例: `feature/issue-15/job-status-filter`、`refactor/issue-15/feature-modules`、`docs/issue-17/branch-naming-rule`。
+  - この規則は追加後に作成するブランチへ適用し、既存ブランチの一律リネームは行わない。
 - `main` ブランチへ直接コミットしない。
 - 既存の作業ブランチを使い回す場合も、開始時点の base と、差分が対象 Issue の変更だけであることを
   確認する。
