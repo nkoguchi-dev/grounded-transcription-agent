@@ -1,18 +1,15 @@
-import os
 from collections.abc import Callable
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
+from app.application.unit_of_work import JobUnitOfWorkFactory
 from app.domain.jobs.job_repository import JobRepository
 from app.infrastructure.jobs import SqlAlchemyJobRepository
 
-engine = create_engine(os.environ["DATABASE_URL"], pool_pre_ping=True)
-SessionLocal = sessionmaker(bind=engine, expire_on_commit=False)
-
 
 class SqlAlchemyJobUnitOfWork:
-    def __init__(self, session_factory: Callable[[], Session] = SessionLocal) -> None:
+    def __init__(self, session_factory: Callable[[], Session]) -> None:
         self._session_factory = session_factory
         self._session: Session | None = None
         self._jobs: JobRepository | None = None
@@ -46,3 +43,9 @@ class SqlAlchemyJobUnitOfWork:
         if self._session is None:
             raise RuntimeError("Unit of work has not been entered")
         self._session.rollback()
+
+
+def create_sqlalchemy_job_uow_factory(database_url: str) -> JobUnitOfWorkFactory:
+    engine = create_engine(database_url, pool_pre_ping=True)
+    sessions = sessionmaker(bind=engine, expire_on_commit=False)
+    return lambda: SqlAlchemyJobUnitOfWork(sessions)
