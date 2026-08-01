@@ -6,6 +6,8 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session, sessionmaker
 
+from app.application.artifacts.object_storage import PresignedUrl, StoredObject
+from app.application.artifacts.unit_of_work import ArtifactUnitOfWorkFactory
 from app.application.jobs.errors import JobDispatchError
 from app.application.unit_of_work import JobUnitOfWorkFactory
 from app.composition import create_application
@@ -26,6 +28,17 @@ class RecordingJobPublisher:
         return self.task_id
 
 
+class UnusedObjectStorage:
+    def create_upload_url(self, object_key: str, content_type: str) -> PresignedUrl:
+        raise AssertionError("artifact storage must not be used by job tests")
+
+    def get_object_info(self, object_key: str) -> StoredObject | None:
+        raise AssertionError("artifact storage must not be used by job tests")
+
+    def create_download_url(self, object_key: str) -> PresignedUrl:
+        raise AssertionError("artifact storage must not be used by job tests")
+
+
 @pytest.fixture
 def publisher() -> RecordingJobPublisher:
     return RecordingJobPublisher()
@@ -34,9 +47,15 @@ def publisher() -> RecordingJobPublisher:
 @pytest.fixture
 def client(
     uow_factory: JobUnitOfWorkFactory,
+    artifact_uow_factory: ArtifactUnitOfWorkFactory,
     publisher: RecordingJobPublisher,
 ) -> Generator[TestClient]:
-    app = create_application(uow_factory=uow_factory, publisher=publisher)
+    app = create_application(
+        uow_factory=uow_factory,
+        publisher=publisher,
+        artifact_uow_factory=artifact_uow_factory,
+        object_storage=UnusedObjectStorage(),
+    )
     with TestClient(app) as test_client:
         yield test_client
 
