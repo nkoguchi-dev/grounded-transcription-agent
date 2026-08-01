@@ -23,8 +23,9 @@
 
 ## 検証
 
-コミット前に `poetry run black .`、`poetry run isort .`、`poetry run flake8 .`、
-`poetry run mypy .`、`poetry run pytest` を実行する。
+依存関係は `uv sync --frozen` で同期する。コミット前に `uv run black --check .`、
+`uv run isort --check-only .`、`uv run flake8 .`、`uv run mypy .`、
+`uv run pytest tests` を実行する。
 
 ## ローカルコマンド（リポジトリルートで実行）
 
@@ -33,5 +34,6 @@ cp backend/.env.example backend/.env.local
 cp minio/.env.example minio/.env.local
 docker compose up --build --wait
 docker compose logs -f api worker
-cd backend && poetry run pytest
+cd backend && uv sync --frozen
+uv run pytest tests
 ```
