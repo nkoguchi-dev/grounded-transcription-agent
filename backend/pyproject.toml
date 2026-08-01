@@ -1,31 +1,31 @@
-[tool.poetry]
+[project]
 name = "grounded-transcription-agent-backend"
 version = "0.1.0"
 description = "Asynchronous job foundation for grounded transcription"
-authors = ["Noriyuki Koguchi"]
-packages = [{include = "app"}]
+authors = [{ name = "Noriyuki Koguchi" }]
+requires-python = ">=3.14,<4.0"
+dependencies = [
+    "fastapi>=0.135.0,<0.136.0",
+    "uvicorn[standard]>=0.41.0,<0.42.0",
+    "celery[redis]>=5.6.0,<6.0.0",
+    "sqlalchemy>=2.0.0,<3.0.0",
+    "psycopg[binary]>=3.2.0,<4.0.0",
+    "alembic>=1.16.0,<2.0.0",
+    "pydantic>=2.0.0,<3.0.0",
+]
 
-[tool.poetry.dependencies]
-python = "^3.14"
-fastapi = "^0.135.0"
-uvicorn = {extras = ["standard"], version = "^0.41.0"}
-celery = {extras = ["redis"], version = "^5.6.0"}
-sqlalchemy = "^2.0.0"
-psycopg = {extras = ["binary"], version = "^3.2.0"}
-alembic = "^1.16.0"
-pydantic = "^2.0.0"
+[dependency-groups]
+dev = [
+    "pytest>=9.0.0,<10.0.0",
+    "httpx>=0.28.0,<0.29.0",
+    "black>=26.0.0,<27.0.0",
+    "isort>=8.0.0,<9.0.0",
+    "flake8>=7.0.0,<8.0.0",
+    "mypy>=1.15.0,<2.0.0",
+]
 
-[tool.poetry.group.dev.dependencies]
-pytest = "^9.0.0"
-httpx = "^0.28.0"
-black = "^26.0.0"
-isort = "^8.0.0"
-flake8 = "^7.0.0"
-mypy = "^1.15.0"
-
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+[tool.uv]
+constraint-dependencies = ["websockets==16.1.1"]
 
 [tool.black]
 line-length = 88
