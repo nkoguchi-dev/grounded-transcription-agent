@@ -6,6 +6,7 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session, sessionmaker
 
+from app.application.jobs.errors import JobDispatchError
 from app.application.unit_of_work import JobUnitOfWorkFactory
 from app.composition import create_application
 from app.domain.jobs.model import Job
@@ -71,7 +72,7 @@ def test_create_job_keeps_committed_job_when_publisher_fails(
     database_session_factory: sessionmaker[Session],
     publisher: RecordingJobPublisher,
 ) -> None:
-    publisher.error = RuntimeError("broker unavailable")
+    publisher.error = JobDispatchError("redis://user:secret@internal-host")
 
     response = client.post(
         "/api/jobs", json={"duration_seconds": 1, "should_fail": True}
@@ -79,6 +80,7 @@ def test_create_job_keeps_committed_job_when_publisher_fails(
 
     assert response.status_code == 503
     assert response.json() == {"detail": "Job broker is unavailable"}
+    assert "secret" not in response.text
     assert len(publisher.published_job_ids) == 1
 
     with database_session_factory() as session:
@@ -87,6 +89,24 @@ def test_create_job_keeps_committed_job_when_publisher_fails(
     assert persisted.status == "queued"
     assert persisted.duration_seconds == 1
     assert persisted.should_fail is True
+    assert persisted.task_id is None
+
+
+def test_create_job_does_not_map_unexpected_error_and_keeps_committed_job(
+    client: TestClient,
+    database_session_factory: sessionmaker[Session],
+    publisher: RecordingJobPublisher,
+) -> None:
+    publisher.error = RuntimeError("unexpected programming error")
+
+    with pytest.raises(RuntimeError, match="unexpected programming error"):
+        client.post("/api/jobs", json={"duration_seconds": 1, "should_fail": False})
+
+    assert len(publisher.published_job_ids) == 1
+    with database_session_factory() as session:
+        persisted = session.get(JobRecord, publisher.published_job_ids[0])
+    assert persisted is not None
+    assert persisted.status == "queued"
     assert persisted.task_id is None
 
 

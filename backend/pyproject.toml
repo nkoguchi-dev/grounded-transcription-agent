@@ -41,5 +41,5 @@ python_version = "3.14"
 strict = true
 
 [[tool.mypy.overrides]]
-module = ["celery", "testcontainers.postgres"]
+module = ["celery", "celery.*", "kombu", "kombu.*", "testcontainers.postgres"]
 ignore_missing_imports = true

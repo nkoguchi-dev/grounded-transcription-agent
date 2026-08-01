@@ -1,6 +1,7 @@
 import pytest
 
 from app.application.jobs.create_job_use_case import CreateJobInput, CreateJobUseCase
+from app.application.jobs.errors import DummyJobExecutionError, JobNotFoundError
 from app.application.jobs.execute_dummy_job_use_case import ExecuteDummyJobUseCase
 from app.application.jobs.get_job_use_case import GetJobUseCase
 from app.domain.jobs.model import Job
@@ -113,11 +114,19 @@ def test_dummy_worker_marks_failed_job_in_a_separate_transaction() -> None:
     )
     worker_use_case = ExecuteDummyJobUseCase(uow_factory, lambda _: None)
 
-    with pytest.raises(RuntimeError, match="configured to fail"):
+    with pytest.raises(DummyJobExecutionError, match="configured to fail"):
         worker_use_case.execute(created.id)
 
     job = GetJobUseCase(uow_factory).execute(created.id)
-    assert job is not None
     assert job.status.value == "failed"
     assert job.error_message == "Dummy job was configured to fail"
     assert [unit.commit_calls for unit in uow_factory.created_units] == [1, 1, 1, 0]
+
+
+def test_get_job_raises_application_error_when_job_does_not_exist() -> None:
+    uow_factory = InMemoryUnitOfWorkFactory()
+
+    with pytest.raises(JobNotFoundError, match="missing"):
+        GetJobUseCase(uow_factory).execute("missing")
+
+    assert uow_factory.created_units[0].commit_calls == 0

@@ -1,5 +1,6 @@
 from collections.abc import Callable
 
+from app.application.jobs.errors import DummyJobExecutionError
 from app.application.unit_of_work import JobUnitOfWorkFactory
 from app.domain.jobs.model import Job, JobStatus
 
@@ -20,7 +21,7 @@ class ExecuteDummyJobUseCase:
         try:
             self._sleep(job.duration_seconds)
             if job.should_fail:
-                raise RuntimeError("Dummy job was configured to fail")
+                raise DummyJobExecutionError("Dummy job was configured to fail")
             self._succeed(job_id)
         except Exception as error:
             self._fail(job_id, str(error))
