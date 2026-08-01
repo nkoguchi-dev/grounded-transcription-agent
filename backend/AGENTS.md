@@ -25,7 +25,8 @@
 
 依存関係は `uv sync --frozen` で同期する。コミット前に `uv run black --check .`、
 `uv run isort --check-only .`、`uv run flake8 .`、`uv run mypy .`、
-`uv run pytest tests` を実行する。
+`uv run pytest tests`、`uv run pytest integration_tests` を実行する。Component/API Test は
+Testcontainers で PostgreSQL を起動するため、実行には Docker Engine が必要になる。
 
 ## ローカルコマンド（リポジトリルートで実行）
 
@@ -36,4 +37,5 @@ docker compose up --build --wait
 docker compose logs -f api worker
 cd backend && uv sync --frozen
 uv run pytest tests
+uv run pytest integration_tests
 ```
