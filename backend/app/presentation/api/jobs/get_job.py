@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
 from app.application.jobs.get_job_use_case import GetJobUseCase
@@ -46,6 +46,4 @@ def get_job(
     use_case: Annotated[GetJobUseCase, Depends(get_get_job_use_case)],
 ) -> GetJobResponse:
     job = use_case.execute(job_id)
-    if job is None:
-        raise HTTPException(status_code=404, detail="Job not found")
     return GetJobResponse.from_job(job)

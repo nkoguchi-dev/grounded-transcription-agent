@@ -30,6 +30,20 @@
 - [ ] 非同期処理の状態遷移は短いトランザクションで永続化され、失敗状態を確認できる。
 - [ ] DB 確定と非同期メッセージ送信が原子的でない場合、その制約と対処方針を変更内容と設計文書に明記している。
 
+## Application エラーと Presentation での変換
+
+- [ ] 予期される Application 失敗が固有例外で表され、`RuntimeError`、`ValueError`、`Exception`、
+  `None` などで曖昧に表現されていない。
+- [ ] Application 例外が FastAPI、HTTP ステータス、Celery など Presentation 固有の型や知識を参照していない。
+- [ ] Presentation は具体的な Application 例外だけを意図したレスポンスへ変換し、予期しない例外を
+  包括的に catch して既知の 4xx／5xx へ誤変換していない。
+- [ ] Infrastructure／外部ライブラリ固有の例外が境界で意味のある Application 例外へ変換され、
+  Application／Presentation へ漏れていない。
+- [ ] 公開エラーレスポンスが内部例外のメッセージ、接続先、認証情報などの内部詳細や機密情報を漏らしていない。
+- [ ] 新規または変更された Application 例外と HTTP ステータスの対応が、本番と共通の composition root を
+  使う Component/API Test で網羅され、公開本文、情報非漏洩、副作用も検証されている。
+- [ ] HTTP 以外の Presentation についても、例外の伝播・再試行・記録方針が明確である。
+
 ## コードコメントと docstring
 
 - [ ] コードだけから安全に判断できない意図・制約・トレードオフには、必要なコメントまたは docstring がある。

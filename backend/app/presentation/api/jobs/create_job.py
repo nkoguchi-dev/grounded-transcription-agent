@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.application.jobs.create_job_use_case import CreateJobInput, CreateJobUseCase
@@ -55,12 +55,5 @@ def create_job(
     job = use_case.execute(
         CreateJobInput(request.duration_seconds, request.should_fail)
     )
-    try:
-        job = use_case.dispatch(job)
-    except Exception as error:
-        # Creation was already committed, but dispatch and task-ID storage are not
-        # atomic. Return an error so callers know to reconcile the created job.
-        raise HTTPException(
-            status_code=503, detail="Job broker is unavailable"
-        ) from error
+    job = use_case.dispatch(job)
     return CreateJobResponse.from_job(job)
