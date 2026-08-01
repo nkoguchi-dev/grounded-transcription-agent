@@ -4,12 +4,12 @@ from datetime import datetime
 
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy.orm import Session, sessionmaker
 
-from app.application.jobs.create_job_use_case import CreateJobUseCase
-from app.application.jobs.get_job_use_case import GetJobUseCase
 from app.application.unit_of_work import JobUnitOfWorkFactory
+from app.composition import create_application
 from app.domain.jobs.model import Job
-from app.presentation.api.app import create_api
+from app.infrastructure.jobs import JobRecord
 
 
 @dataclass
@@ -35,17 +35,14 @@ def client(
     uow_factory: JobUnitOfWorkFactory,
     publisher: RecordingJobPublisher,
 ) -> Generator[TestClient]:
-    app = create_api(
-        CreateJobUseCase(uow_factory, publisher),
-        GetJobUseCase(uow_factory),
-    )
+    app = create_application(uow_factory=uow_factory, publisher=publisher)
     with TestClient(app) as test_client:
         yield test_client
 
 
 def test_create_job_persists_and_publishes_once(
     client: TestClient,
-    uow_factory: JobUnitOfWorkFactory,
+    database_session_factory: sessionmaker[Session],
     publisher: RecordingJobPublisher,
 ) -> None:
     response = client.post(
@@ -61,16 +58,17 @@ def test_create_job_persists_and_publishes_once(
     assert body["error_message"] is None
     assert publisher.published_job_ids == [body["id"]]
 
-    persisted = GetJobUseCase(uow_factory).execute(body["id"])
+    with database_session_factory() as session:
+        persisted = session.get(JobRecord, body["id"])
     assert persisted is not None
     assert persisted.id == body["id"]
-    assert persisted.status.value == "queued"
+    assert persisted.status == "queued"
     assert persisted.task_id == publisher.task_id
 
 
 def test_create_job_keeps_committed_job_when_publisher_fails(
     client: TestClient,
-    uow_factory: JobUnitOfWorkFactory,
+    database_session_factory: sessionmaker[Session],
     publisher: RecordingJobPublisher,
 ) -> None:
     publisher.error = RuntimeError("broker unavailable")
@@ -83,9 +81,10 @@ def test_create_job_keeps_committed_job_when_publisher_fails(
     assert response.json() == {"detail": "Job broker is unavailable"}
     assert len(publisher.published_job_ids) == 1
 
-    persisted = GetJobUseCase(uow_factory).execute(publisher.published_job_ids[0])
+    with database_session_factory() as session:
+        persisted = session.get(JobRecord, publisher.published_job_ids[0])
     assert persisted is not None
-    assert persisted.status.value == "queued"
+    assert persisted.status == "queued"
     assert persisted.duration_seconds == 1
     assert persisted.should_fail is True
     assert persisted.task_id is None
@@ -93,12 +92,11 @@ def test_create_job_keeps_committed_job_when_publisher_fails(
 
 def test_get_job_returns_state_persisted_in_postgresql(
     client: TestClient,
-    uow_factory: JobUnitOfWorkFactory,
+    database_session_factory: sessionmaker[Session],
 ) -> None:
     job = Job.create(duration_seconds=3, should_fail=True).with_task_id("existing-task")
-    with uow_factory() as uow:
-        uow.jobs.create(job)
-        uow.commit()
+    with database_session_factory.begin() as session:
+        session.add(JobRecord(**job.__dict__))
 
     response = client.get(f"/api/jobs/{job.id}")
 

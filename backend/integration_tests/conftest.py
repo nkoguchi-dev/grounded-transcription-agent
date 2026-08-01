@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 from sqlalchemy import Engine, create_engine, text
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import Session, sessionmaker
 from testcontainers.postgres import PostgresContainer
 
 from alembic import command
@@ -33,11 +33,17 @@ def database_engine() -> Generator[Engine]:
 
 
 @pytest.fixture(scope="session")
-def uow_factory(database_engine: Engine) -> JobUnitOfWorkFactory:
+def database_session_factory(database_engine: Engine) -> sessionmaker[Session]:
+    return sessionmaker(bind=database_engine, expire_on_commit=False)
+
+
+@pytest.fixture(scope="session")
+def uow_factory(
+    database_session_factory: sessionmaker[Session],
+) -> JobUnitOfWorkFactory:
     from app.infrastructure.database import SqlAlchemyJobUnitOfWork
 
-    sessions = sessionmaker(bind=database_engine, expire_on_commit=False)
-    return lambda: SqlAlchemyJobUnitOfWork(sessions)
+    return lambda: SqlAlchemyJobUnitOfWork(database_session_factory)
 
 
 @pytest.fixture(autouse=True)
