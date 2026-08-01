@@ -12,6 +12,7 @@ dependencies = [
     "psycopg[binary]>=3.2.0,<4.0.0",
     "alembic>=1.16.0,<2.0.0",
     "pydantic>=2.0.0,<3.0.0",
+    "boto3>=1.42.0,<2.0.0",
 ]
 
 [dependency-groups]
@@ -41,5 +42,5 @@ python_version = "3.14"
 strict = true
 
 [[tool.mypy.overrides]]
-module = ["celery", "celery.*", "kombu", "kombu.*", "testcontainers.postgres"]
+module = ["boto3", "botocore.*", "celery", "celery.*", "kombu", "kombu.*", "testcontainers.*"]
 ignore_missing_imports = true

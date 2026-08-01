@@ -9,6 +9,7 @@ from testcontainers.postgres import PostgresContainer
 
 from alembic import command
 from alembic.config import Config
+from app.application.artifacts.unit_of_work import ArtifactUnitOfWorkFactory
 from app.application.unit_of_work import JobUnitOfWorkFactory
 
 
@@ -46,10 +47,19 @@ def uow_factory(
     return lambda: SqlAlchemyJobUnitOfWork(database_session_factory)
 
 
+@pytest.fixture(scope="session")
+def artifact_uow_factory(
+    database_session_factory: sessionmaker[Session],
+) -> ArtifactUnitOfWorkFactory:
+    from app.infrastructure.artifact_database import SqlAlchemyArtifactUnitOfWork
+
+    return lambda: SqlAlchemyArtifactUnitOfWork(database_session_factory)
+
+
 @pytest.fixture(autouse=True)
 def isolate_test_data(database_engine: Engine) -> Generator[None]:
     yield
     # Use database-level cleanup because application transactions have already
     # committed by the time an API request returns.
     with database_engine.begin() as connection:
-        connection.execute(text("TRUNCATE TABLE jobs"))
+        connection.execute(text("TRUNCATE TABLE jobs, artifacts"))

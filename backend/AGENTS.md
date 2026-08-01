@@ -41,6 +41,11 @@
 
 ## 検証
 
+機能ごとのテストは自己完結させ、別機能のテストモジュール、fixture、Stub、Fake、テスト用ヘルパーを
+import して再利用しない。対象機能に必要なテストダブルは、その機能のテストモジュールまたは対象機能用の
+共通 fixture に定義する。プロダクションコード上の公開インターフェースや、機能に依存しない汎用テスト基盤は
+共有してよい。
+
 依存関係は `uv sync --frozen` で同期する。コミット前に `uv run black --check .`、
 `uv run isort --check-only .`、`uv run flake8 .`、`uv run mypy .`、
 `uv run pytest tests`、`uv run pytest integration_tests` を実行する。Component/API Test は
